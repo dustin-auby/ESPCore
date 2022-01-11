@@ -193,7 +193,7 @@ const char _DASHBOARD_HTML[] PROGMEM = R"rawliteral(
                     console.log(key, _this.json[key]);
                     if(_this.mapped_listeners.indexOf(key) === -1){
                         _this.mapped_listeners.push(key);
-                        console.log("listener bount for " , key);
+                        console.log("listener bound for " , key);
                         source.addEventListener(key, function(e) {
                         console.log("got value for " + key , e.data);
                         _this.json[key].value = e.data;
@@ -202,9 +202,23 @@ const char _DASHBOARD_HTML[] PROGMEM = R"rawliteral(
                     }
                 });
 
+                Object.keys(_this.switches).forEach(key => {
+                    console.log(key, _this.switches[key]);
+                    if(_this.mapped_listeners.indexOf(key) === -1){
+                        _this.mapped_listeners.push(key);
+                        console.log("listener bound for " , key);
+                        source.addEventListener(key, function(e) {
+                        console.log("got value for " + key , e.data);
+                        _this.switches[key].value = e.data;
+                        console.log(_this.switches);
+                        }, false);
+                    }
+                });
+
                 source.addEventListener('rssi', function(e) {
                     _this.signal = e.data;
                 }, false);
+
             }
         },
         data: () => ({
