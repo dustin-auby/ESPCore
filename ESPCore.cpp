@@ -130,25 +130,25 @@ void ESPCore::startServer() {
         request->send(200, "text/html", "<html><body>test<body/></html>");
     });
 
-    server.on("/switch-action", HTTP_POST, [](AsyncWebServerRequest* request) {
-        AsyncWebParameter* p = request->getParam("state");
-        AsyncWebParameter* q = request->getParam("key");
-        ESPCoreSwitch* tmp;
-        for (int i = 0; i < switches.size(); i++) {
-            tmp = switches.get(i);
-            if (tmp->key == String(q->value())) {
-                if (String(p->value()) == "true") {
-                    tmp->callAction(true);
-                }else {
-                    tmp->callAction(false);
+    server.on("/action", HTTP_POST, [](AsyncWebServerRequest* request) {
+        AsyncWebParameter* type = request->getParam("type");
+        if (String(type->value()) == "switch") {
+            AsyncWebParameter* p = request->getParam("state");
+            AsyncWebParameter* q = request->getParam("key");
+            ESPCoreSwitch* tmp;
+            for (int i = 0; i < switches.size(); i++) {
+                tmp = switches.get(i);
+                if (tmp->key == String(q->value())) {
+                    if (String(p->value()) == "true") {
+                        tmp->callAction(true);
+                    }else {
+                        tmp->callAction(false);
+                    }
                 }
+//                String key_state = tmp->key + "_state";
+//                events.send("false", key_state.c_str(), millis());
             }
-            String key_state = tmp->key + "_state";
-            events.send("false", key_state.c_str(), millis());
         }
-
-
-        
         request->send(200, "application/json", "{\"state\":true}");
     });
 
