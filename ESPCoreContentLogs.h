@@ -177,6 +177,15 @@ const char _LOGS_HTML[] PROGMEM = R"rawliteral(
                         </v-chip>
                     </template>
                 </v-data-table>
+                <v-text-field
+                v-model="command"
+                solo
+                label="Send Command"
+                prepend-icon="mdi-console"
+                append-outer-icon="mdi-send"
+                @click:append-outer="sendCommand"
+                :loading="command_sending"
+                ></v-text-field>
             </v-card>
         </v-main>
     </v-app>
@@ -184,7 +193,7 @@ const char _LOGS_HTML[] PROGMEM = R"rawliteral(
 <script src="https://cdn.jsdelivr.net/npm/vue@2.x/dist/vue.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js" integrity="sha512-qTXRIMyZIFb8iQcfjXWCO8+M5Tbc38Qi5WzdPOYZHIlZpzBHG3L3by84BBBOiRGiEb7KKtAOAs5qYdUiZiQNNQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 <script>
     new Vue({
         el: '#app',
@@ -242,6 +251,8 @@ const char _LOGS_HTML[] PROGMEM = R"rawliteral(
             itemsPerPageArray: [20, 50, 100, 200, 500],
             itemsPerPage: 20,
             current_page: 1,
+            command: "",
+            command_sending:false,
             headers: [
                 {
                     text: 'Time',
@@ -339,8 +350,6 @@ const char _LOGS_HTML[] PROGMEM = R"rawliteral(
                 if(isNaN(signal_s)){
                     signal_s = 0;
                 }
-
-                console.log("signal_s", signal_s);
                 if(signal_s >=  -65){
                     return "good";
                 }else if(signal_s >= -85 && signal_s < -65){
@@ -362,6 +371,24 @@ const char _LOGS_HTML[] PROGMEM = R"rawliteral(
             },
             isActive(to){
 
+            },
+            sendCommand(){
+                this.command_sending = true;
+                let _this = this;
+
+                const params = new URLSearchParams();
+                params.append('c', this.command);
+
+                axios.post('/command', params)
+                  .then(function (response) {
+                    console.log(response);
+                    _this.command_sending = false;
+                    _this.command = "";
+                  })
+                  .catch(function (error) {
+                    console.log(error);
+                    _this.command_sending = false;
+                  });
             },
         }
     })
