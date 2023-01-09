@@ -8,6 +8,7 @@ long rssi = 0;
 CoreLinkedList<ESPCoreVariable*> variables = CoreLinkedList<ESPCoreVariable*>();
 CoreLinkedList<ESPCoreVariable*> properties = CoreLinkedList<ESPCoreVariable*>();
 CoreLinkedList<ESPCoreSwitch*> switches = CoreLinkedList<ESPCoreSwitch*>();
+void (*commandCallback)(String);
 DynamicJsonBuffer jsonBuffer;
 bool shouldReboot = false;
 
@@ -130,25 +131,62 @@ void ESPCore::startServer() {
         request->send(200, "text/html", "<html><body>test<body/></html>");
     });
 
-    server.on("/switch-action", HTTP_POST, [](AsyncWebServerRequest* request) {
-        AsyncWebParameter* p = request->getParam("state");
-        AsyncWebParameter* q = request->getParam("key");
-        ESPCoreSwitch* tmp;
-        for (int i = 0; i < switches.size(); i++) {
-            tmp = switches.get(i);
-            if (tmp->key == String(q->value())) {
-                if (String(p->value()) == "true") {
-                    tmp->callAction(true);
-                }else {
-                    tmp->callAction(false);
+    server.on("/action", HTTP_POST, [](AsyncWebServerRequest* request) {
+        AsyncWebParameter* type = request->getParam("type");
+        if (String(type->value()) == "switch") {
+            AsyncWebParameter* p = request->getParam("state");
+            AsyncWebParameter* q = request->getParam("key");
+            ESPCoreSwitch* tmp;
+            for (int i = 0; i < switches.size(); i++) {
+                tmp = switches.get(i);
+                if (tmp->key == String(q->value())) {
+                    if (String(p->value()) == "true") {
+                        tmp->callAction(true);
+                    }else {
+                        tmp->callAction(false);
+                    }
                 }
+//                String key_state = tmp->key + "_state";
+//                events.send("false", key_state.c_str(), millis());
             }
-            String key_state = tmp->key + "_state";
-            events.send("false", key_state.c_str(), millis());
+        }
+        request->send(200, "application/json", "{\"state\":true}");
+    });
+
+    server.on("/command", HTTP_POST, [](AsyncWebServerRequest* request) {
+
+        int params = request->params();
+        for(int i=0;i<params;i++){
+            AsyncWebParameter* p = request->getParam(i);
+            if(p->isFile()){ //p->isPost() is also true
+                Serial.printf("FILE[%s]: %s, size: %u\n", p->name().c_str(), p->value().c_str(), p->size());
+            } else if(p->isPost()){
+                Serial.printf("POST[%s]: %s\n", p->name().c_str(), p->value().c_str());
+            } else {
+                Serial.printf("GET[%s]: %s\n", p->name().c_str(), p->value().c_str());
+            }
         }
 
+        AsyncWebParameter* com = request->getParam(0);
+        Serial.println("command running ...");
+        Serial.println(com->value().c_str());
 
-        
+        if(String(com->value().c_str()) == "reboot"){
+            Serial.println("Rebooting...");
+            delay(100);
+            ESP.restart();
+        }else{
+            if(commandCallback != NULL){
+                Serial.println("command running ...");
+                commandCallback(com->value().c_str());
+            }else{
+                String log_message = "Please define commandCallback before using commands";
+                Serial.print("warning-- ");
+                Serial.println(log_message);
+                String json = "{\"message\":\"" + log_message + "\", \"type\":\"warn\"}";
+                events.send(json.c_str(), "logger", millis());
+            }
+        }
         request->send(200, "application/json", "{\"state\":true}");
     });
 
@@ -181,7 +219,9 @@ void ESPCore::startServer() {
         }, [](AsyncWebServerRequest* request, String filename, size_t index, uint8_t* data, size_t len, bool final) {
             if (!index) {
                 Serial.printf("Update Start: %s\n", filename.c_str());
-                Update.runAsync(true);
+                #if defined(ESP8266)
+                    Update.runAsync(true);
+                #endif
                 if (!Update.begin((ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000)) {
                     Update.printError(Serial);
                 }
@@ -272,6 +312,11 @@ void ESPCore::report(String title, String unit, String key, String (*function)(v
     v->function = function;
     variables.add(v);
     index++;
+}
+
+void ESPCore::registerCommandCallback(void (*function)(String))
+{
+    commandCallback = function;
 }
 
 void ESPCore::update(String key, String value)

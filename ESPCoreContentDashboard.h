@@ -126,6 +126,7 @@ const char _DASHBOARD_HTML[] PROGMEM = R"rawliteral(
                 <v-row>
                     <v-col cols="2" v-for="(obj, key, index) in getSwitches">
                         <v-switch
+                            @change="switchAction(obj, key)"
                             v-model="obj.value"
                             :label="obj.name"
                             :color="obj.color"
@@ -168,6 +169,7 @@ const char _DASHBOARD_HTML[] PROGMEM = R"rawliteral(
 </div>
 <script src="https://cdn.jsdelivr.net/npm/vue@2.x/dist/vue.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 <script>
     new Vue({
         el: '#app',
@@ -257,8 +259,9 @@ const char _DASHBOARD_HTML[] PROGMEM = R"rawliteral(
                 return 'error';
             },
             signalQualityIcon(){
-                console.log("this.getSignalQuality()", this.getSignalQuality());
-                switch(this.getSignalQuality()){
+                let sigq = this.getSignalQuality();
+                console.log("this.getSignalQuality()", sigq);
+                switch(sigq){
                     case 'good':
                         return 'mdi-wifi-strength-4';
                     case 'fair':
@@ -272,6 +275,17 @@ const char _DASHBOARD_HTML[] PROGMEM = R"rawliteral(
             }
         },
         methods: {
+            switchAction(obj, evt){
+                console.log("obj", obj);
+                console.log("evt", evt);
+//                axios.post("/api/admin/reports/load-chart-data", {
+//                    uuid: chart._uuid,
+//                }).then((response) => {
+//
+//                }).catch((er) => {
+//                    console.log(er);
+//                });
+            },
             getSignalQuality(){
                 let signal_s = parseFloat(this.signal);
                 if(isNaN(signal_s)){
@@ -279,7 +293,7 @@ const char _DASHBOARD_HTML[] PROGMEM = R"rawliteral(
                 }
                 if(signal_s >=  -65){
                     return "good";
-                }else if(signal_s >= -85 && signal_s < -75){
+                }else if(signal_s >= -85 && signal_s < -65){
                     return "fair";
                 }else if(signal_s >= -95 && signal_s < -85){
                     return "poor";

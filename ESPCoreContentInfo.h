@@ -256,7 +256,7 @@ const char _INFO_HTML[] PROGMEM = R"rawliteral(
                 console.log("signal_s", signal_s);
                 if(signal_s >=  -65){
                     return "good";
-                }else if(signal_s >= -85 && signal_s < -75){
+                }else if(signal_s >= -85 && signal_s < -65){
                     return "fair";
                 }else if(signal_s >= -95 && signal_s < -85){
                     return "poor";
