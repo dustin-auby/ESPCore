@@ -147,6 +147,13 @@ const char _INFO_HTML[] PROGMEM = R"rawliteral(
                         </v-list-item-content>
                     </v-list-item>
 
+                    <v-list-item two-line>
+                        <v-list-item-content>
+                            <v-list-item-title>Up Time</v-list-item-title>
+                            <v-list-item-subtitle>{{uptime}} s</v-list-item-subtitle>
+                        </v-list-item-content>
+                    </v-list-item>
+
                 </v-card>
 
         </v-main>
@@ -197,6 +204,9 @@ const char _INFO_HTML[] PROGMEM = R"rawliteral(
                 source.addEventListener('rssi', function(e) {
                     _this.signal = e.data;
                 }, false);
+                source.addEventListener('up-time', function(e) {
+                    _this.uptime = e.data;
+                }, false);
             }
         },
         data: () => ({
@@ -209,6 +219,7 @@ const char _INFO_HTML[] PROGMEM = R"rawliteral(
             wifi_ssid: '%SSID%',
             mqtt_config_topic: '%MQTT_CONFIG_TOPIC%',
             signal: '%SIGNAL%',
+            uptime: '%UP-TIME%',
             json: JSON.parse('%JSON_PROPS%'),
             mapped_listeners: []
         }),
