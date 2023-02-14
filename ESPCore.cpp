@@ -11,6 +11,7 @@ CoreLinkedList<ESPCoreSwitch*> switches = CoreLinkedList<ESPCoreSwitch*>();
 void (*commandCallback)(String);
 DynamicJsonBuffer jsonBuffer;
 bool shouldReboot = false;
+unsigned long up_time = millis();
 
 String getJSON(CoreLinkedList<ESPCoreVariable*> items) {
     
@@ -46,6 +47,9 @@ String processor(const String& var){
     }
     else if (var == "SSID") {
         return String(wifi_ssid);
+    }
+    else if (var == "UP-TIME") {
+        return String(((millis() - up_time) / 1000));
     }
     else if (var == "JSON_PROPS") {
         //return getJSON(properties);
@@ -210,6 +214,12 @@ void ESPCore::startServer() {
     server.on("/ping", HTTP_GET, [](AsyncWebServerRequest* request) {
         request->send(200, "text/plain", "true");
         });
+
+    server.on("/remote_reboot", HTTP_GET, [](AsyncWebServerRequest* request) {
+        request->send(200, "application/json", "{\"state\":true}");
+        delay(100);
+        ESP.restart();
+    });
 
     server.on("/update", HTTP_POST, [](AsyncWebServerRequest* request) {
         //shouldReboot = !Update.hasError();
@@ -378,14 +388,16 @@ void ESPCore::loop()
         rssi = WiFi.RSSI();
         wifi_ssid = WiFi.SSID();
 
-        events.send("ping",NULL,millis());
-        events.send(wifi_ssid.c_str(),"ssid",millis());
-        events.send(String(rssi).c_str(),"rssi",millis());
-        events.send(IPADDRESS.c_str(),"ipaddress",millis());
+        unsigned long nowtime = millis();
+        events.send("ping",NULL,nowtime);
+        events.send(wifi_ssid.c_str(),"ssid",nowtime);
+        events.send(String(rssi).c_str(),"rssi",nowtime);
+        events.send(String(((millis() - up_time) / 1000)).c_str(),"up-time",nowtime);
+        events.send(IPADDRESS.c_str(),"ipaddress",nowtime);
         ESPCoreVariable* tmp;
         for (int i = 0; i < properties.size(); i++) {
             tmp = properties.get(i);
-            events.send(tmp->getValue().c_str(), tmp->key.c_str(), millis());
+            events.send(tmp->getValue().c_str(), tmp->key.c_str(), nowtime);
         }
     }
     
